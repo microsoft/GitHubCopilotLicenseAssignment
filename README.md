@@ -10,7 +10,7 @@ The main goal of this repository is to automate the process of assigning GitHub 
 
 ## How to configure this repository in your organization
 
-1. Click on [Use this template](https://github.com/new?template_name=GitHubCopilotLicenseAssignment&template_owner=dsanchezcr) to create a new repository in your GitHub organization where you want to automate the GitHub Copilot license assignment.
+1. Click on [Use this template](https://github.com/new?template_name=GitHubCopilotLicenseAssignment&template_owner=microsoft) to create a new repository in your GitHub organization where you want to automate the GitHub Copilot license assignment.
 2. [Create a new label](/../../labels) in that new repository named `copilot-request`.
 3. The GitHub Enterprise Owner or GitHub Organization Owner needs to enable GitHub Copilot for the organization where the repository is located. For more details, refer to the [official documentation](https://docs.github.com/copilot/managing-github-copilot-in-your-organization/managing-access-for-copilot-in-your-organization).
 4. In the GitHub Organization, create a new GitHub App by going to `Settings`, then `Developer settings` and then `GitHub Apps`, click on `New GitHub App` and provide the `Name`, `Homepage URL` (could be any URL) and the following permissions:
