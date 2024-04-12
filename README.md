@@ -105,4 +105,4 @@ The repository contains an `index.html` file that is used in GitHub Pages as inf
 
 ## Feedback
 
-If you have any feedback, please create an issue in this repository. We would love to hear from you!
+If you have any feedback, please [create an issue in this repository](https://github.com/microsoft/GitHubCopilotLicenseAssignment/issues/new). We would love to hear from you! 🚀
