@@ -1,0 +1,26 @@
+name: Assign GitHub Copilot License
+description: Request a GitHub Copilot license from this organization.
+title: "Assign GitHub Copilot License"
+labels:
+  - copilot-request
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Requesting a GitHub Copilot license
+
+        By opening this issue, you are requesting access to a GitHub Copilot license under this organization.
+
+        Once your license request is fulfilled, you will receive an email from GitHub, confirming that your license is active.
+
+        Please make the most of this opportunity and use GitHub Copilot to enhance your coding experience.  
+
+  - type: checkboxes
+    id: acknowledge
+    attributes:
+      label: Acknowledgment
+      description: Please confirm the following before submitting your request.
+      options:
+        - label: I acknowledge that I will actively use the assigned GitHub Copilot license and comply with the organization's usage rules. If license isn't required, I will remove it via self request.
+          required: true
