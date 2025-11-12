@@ -13,52 +13,75 @@ env:
 jobs:
   assign_github_copilot_license:
     name: Assign GitHub Copilot License
-    # This job runs on the latest version of Ubuntu
     runs-on: ubuntu-latest
-    # This job only runs if the label added to the issue is 'copilot-request'
     if: github.event.label.name == 'copilot-request'
     steps:
-      # This step sets up Node.js version 20
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      # This step installs the @octokit/action npm package
-      - run: npm install @octokit/action
       # This step gets a GitHub App installation access token
       - name: Get Token
         id: get_workflow_token
-        uses: peter-murray/workflow-application-token-action@v3
+        uses: actions/create-github-app-token@v1
         with:
-          application_id: ${{ secrets.APPLICATION_ID }}
-          application_private_key: ${{ secrets.APPLICATION_PRIVATE_KEY }}      
-      # This step assigns a GitHub Copilot license to the user who created the issue
+          app-id: ${{ secrets.APPLICATION_ID }}
+          private-key: ${{ secrets.APPLICATION_PRIVATE_KEY }}
+
+      # This step tries to assign a license and handles specific errors
       - name: Assign GitHub Copilot license
         id: assign_license
-        continue-on-error: true
         uses: actions/github-script@v7
-        env:
-          GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }} 
+        with:
+          github-token: ${{ steps.get_workflow_token.outputs.token }}
+          result-encoding: string
+          script: |
+            try {
+              await github.request('POST /orgs/{org}/copilot/billing/selected_users', {
+                org: context.repo.owner,
+                selected_usernames: [context.payload.sender.login],
+                headers: {
+                  'X-GitHub-Api-Version': '2022-11-28'
+                }
+              });
+              return 'success';
+            } catch (error) {
+              if (error.status === 422 && error.message.includes('User already has Copilot access')) {
+                console.log('User already has a license.');
+                return 'already_exists';
+              }
+              console.error('Failed to assign license:', error);
+              return 'failure';
+            }
+
+      # This step runs if the user ALREADY has a license
+      - name: Comment on existing license and close issue
+        if: steps.assign_license.outputs.result == 'already_exists'
+        uses: actions/github-script@v7
         with:
           script: |
-            const { Octokit } = require("@octokit/action");            
-            const octokit = new Octokit();            
-            const response = await octokit.request('POST /orgs/{org}/copilot/billing/selected_users', {
-              org: context.repo.owner,
-              selected_usernames: [context.payload.sender.login],
+            await github.request('POST /repos/{owner}/{repo}/issues/{issue_number}/comments', {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: 'It appears you already have an active GitHub Copilot license. No action was needed. Closing this request. ✅',
               headers: {
                 'X-GitHub-Api-Version': '2022-11-28'
               }
-            })
-            return response.status >= 200 && response.status < 300 ? 'success' : 'failure'
-      # If the previous step was successful, this step comments on the issue and closes it
+            });
+            await github.request('PATCH /repos/{owner}/{repo}/issues/{issue_number}', {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              state: 'closed',
+              headers: {
+                'X-GitHub-Api-Version': '2022-11-28'
+              }
+            });
+
+      # This step runs on successful assignment
       - name: Comment and close GitHub Issue on success
-        if: steps.assign_license.outcome == 'success'
+        if: steps.assign_license.outputs.result == 'success'
         uses: actions/github-script@v7
         with:
           script: |
-            const { Octokit } = require("@octokit/action");            
-            const octokit = new Octokit(); 
-            await octokit.request('POST /repos/{owner}/{repo}/issues/{issue_number}/comments', {
+            await github.request('POST /repos/{owner}/{repo}/issues/{issue_number}/comments', {
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -67,7 +90,7 @@ jobs:
                 'X-GitHub-Api-Version': '2022-11-28'
               }
             });
-            await octokit.request('PATCH /repos/{owner}/{repo}/issues/{issue_number}', {
+            await github.request('PATCH /repos/{owner}/{repo}/issues/{issue_number}', {
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -76,20 +99,18 @@ jobs:
                 'X-GitHub-Api-Version': '2022-11-28'
               }
             });
-      # If the previous step failed, this step comments on the issue to notify about the failure
+
+      # This step runs on any other failure
       - name: Comment GitHub Issue on failure
-        if: steps.assign_license.outcome == 'failure'        
+        if: steps.assign_license.outputs.result == 'failure'
         uses: actions/github-script@v7
         with:
           script: |
-            const { Octokit } = require("@octokit/action");            
-            const octokit = new Octokit(); 
-            await octokit.request('POST /repos/{owner}/{repo}/issues/{issue_number}/comments', {
+            await github.request('POST /repos/{owner}/{repo}/issues/{issue_number}/comments', {
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: 'Failed assigning the GitHub Copilot license. Please contact the organization administrator.',
-              content: 'confused',
               headers: {
                 'X-GitHub-Api-Version': '2022-11-28'
               }
@@ -97,52 +118,43 @@ jobs:
 
   remove_github_copilot_license:
     name: Remove GitHub Copilot License
-    # This job runs on the latest version of Ubuntu
     runs-on: ubuntu-latest
-    # This job only runs if the label added to the issue is 'copilot-remove'
     if: github.event.label.name == 'copilot-remove'
     steps:
-      # This step sets up Node.js version 20
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      # This step installs the @octokit/action npm package
-      - run: npm install @octokit/action
-      # This step gets a GitHub App installation access token
       - name: Get Token
         id: get_workflow_token
-        uses: peter-murray/workflow-application-token-action@v3
+        uses: actions/create-github-app-token@v1
         with:
-          application_id: ${{ secrets.APPLICATION_ID }}
-          application_private_key: ${{ secrets.APPLICATION_PRIVATE_KEY }}      
-      # This step assigns a GitHub Copilot license to the user who created the issue
+          app-id: ${{ secrets.APPLICATION_ID }}
+          private-key: ${{ secrets.APPLICATION_PRIVATE_KEY }}
+
       - name: Remove GitHub Copilot license
         id: remove_license
-        continue-on-error: true
         uses: actions/github-script@v7
-        env:
-          GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }} 
         with:
+          github-token: ${{ steps.get_workflow_token.outputs.token }}
+          result-encoding: string
           script: |
-            const { Octokit } = require("@octokit/action");            
-            const octokit = new Octokit();            
-            const response = await octokit.request('DELETE /orgs/{org}/copilot/billing/selected_users', {
-              org: context.repo.owner,
-              selected_usernames: [context.payload.sender.login],
-              headers: {
-                'X-GitHub-Api-Version': '2022-11-28'
-              }
-            })
-            return response.status >= 200 && response.status < 300 ? 'success' : 'failure'
-      # If the previous step was successful, this step comments on the issue and closes it
+            try {
+              await github.request('DELETE /orgs/{org}/copilot/billing/selected_users', {
+                org: context.repo.owner,
+                selected_usernames: [context.payload.sender.login],
+                headers: {
+                  'X-GitHub-Api-Version': '2022-11-28'
+                }
+              });
+              return 'success';
+            } catch (error) {
+              console.error('Failed to remove license:', error);
+              return 'failure';
+            }
+
       - name: Comment and close GitHub Issue on success
-        if: steps.remove_license.outcome == 'success'
+        if: steps.remove_license.outputs.result == 'success'
         uses: actions/github-script@v7
         with:
           script: |
-            const { Octokit } = require("@octokit/action");            
-            const octokit = new Octokit(); 
-            await octokit.request('POST /repos/{owner}/{repo}/issues/{issue_number}/comments', {
+            await github.request('POST /repos/{owner}/{repo}/issues/{issue_number}/comments', {
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -151,7 +163,7 @@ jobs:
                 'X-GitHub-Api-Version': '2022-11-28'
               }
             });
-            await octokit.request('PATCH /repos/{owner}/{repo}/issues/{issue_number}', {
+            await github.request('PATCH /repos/{owner}/{repo}/issues/{issue_number}', {
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -160,20 +172,17 @@ jobs:
                 'X-GitHub-Api-Version': '2022-11-28'
               }
             });
-      # If the previous step failed, this step comments on the issue to notify about the failure
+
       - name: Comment GitHub Issue on failure
-        if: steps.remove_license.outcome == 'failure'        
+        if: steps.remove_license.outputs.result == 'failure'
         uses: actions/github-script@v7
         with:
           script: |
-            const { Octokit } = require("@octokit/action");            
-            const octokit = new Octokit(); 
-            await octokit.request('POST /repos/{owner}/{repo}/issues/{issue_number}/comments', {
+            await github.request('POST /repos/{owner}/{repo}/issues/{issue_number}/comments', {
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: 'Failed removing the GitHub Copilot license. Please contact the organization administrator.',
-              content: 'confused',
               headers: {
                 'X-GitHub-Api-Version': '2022-11-28'
               }
