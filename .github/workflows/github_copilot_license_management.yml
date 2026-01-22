@@ -42,7 +42,7 @@ jobs:
         uses: ./.github/actions/validate-org-membership
         with:
           github-token: ${{ steps.get_workflow_token.outputs.token }}
-          username: ${{ github.event.issue.user.login }}
+          username: ${{ github.event.sender.login }}
           org: ${{ github.repository_owner }}
 
       # Comment if user is not an org member
@@ -63,7 +63,9 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number,
               name: 'copilot-request'
-            }).catch(() => {});
+            }).catch(error => {
+              console.error('Failed to remove label "copilot-request":', error);
+            });
             
             await github.rest.issues.update({
               owner: context.repo.owner,
@@ -71,6 +73,19 @@ jobs:
               issue_number: context.issue.number,
               state: 'closed',
               state_reason: 'not_planned'
+            });
+
+      # Comment if validation encountered an internal error
+      - name: Comment on validation error
+        if: steps.validate_membership.outputs.status == 'error'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '⚠️ Copilot license request validation failed due to a workflow configuration error.\n\nPlease contact a repository administrator to investigate.\n\nThis issue will remain open for administrator review.'
             });
 
       # This step tries to assign a license and handles specific errors
@@ -82,7 +97,7 @@ jobs:
           github-token: ${{ steps.get_workflow_token.outputs.token }}
           result-encoding: string
           script: |
-            const username = context.payload.issue.user.login;
+            const username = context.payload.sender.login;
             console.log(`Attempting to assign Copilot license to: ${username}`);
             
             try {
@@ -141,7 +156,9 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number,
               name: 'copilot-request'
-            }).catch(() => {});
+            }).catch(error => {
+              console.error('Failed to remove label "copilot-request":', error);
+            });
             
             await github.rest.issues.update({
               owner: context.repo.owner,
@@ -168,7 +185,9 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number,
               name: 'copilot-request'
-            }).catch(() => {});
+            }).catch(error => {
+              console.error('Failed to remove label "copilot-request":', error);
+            });
             
             await github.rest.issues.update({
               owner: context.repo.owner,
@@ -195,7 +214,9 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number,
               name: 'copilot-request'
-            }).catch(() => {});
+            }).catch(error => {
+              console.error('Failed to remove label "copilot-request":', error);
+            });
 
       # Handle user not found
       - name: Comment on user not found
@@ -215,7 +236,9 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number,
               name: 'copilot-request'
-            }).catch(() => {});
+            }).catch(error => {
+              console.error('Failed to remove label "copilot-request":', error);
+            });
             
             await github.rest.issues.update({
               owner: context.repo.owner,
@@ -243,7 +266,9 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number,
               name: 'copilot-request'
-            }).catch(() => {});
+            }).catch(error => {
+              console.error('Failed to remove label "copilot-request":', error);
+            });
 
       # This step runs on any other failure
       - name: Comment GitHub Issue on failure
@@ -251,12 +276,19 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const errorMessage = '${{ steps.assign_license.outputs.error_message }}';
+            function escapeMarkdown(text) {
+              if (!text) return '';
+              return String(text).replace(/[\\`*_{}\[\]()#+\-.!$]/g, '\\$&');
+            }
+
+            const rawErrorMessage = '${{ steps.assign_license.outputs.error_message }}';
+            const safeErrorMessage = escapeMarkdown(rawErrorMessage) || 'Unknown error';
+
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: `❌ Failed to assign the GitHub Copilot license.\n\n**Error:** ${errorMessage || 'Unknown error'}\n\nPlease contact the organization administrator for assistance.\n\nThis issue will remain open for administrator review.`
+              body: `❌ Failed to assign the GitHub Copilot license.\n\n**Error:** ${safeErrorMessage}\n\nPlease contact the organization administrator for assistance.\n\nThis issue will remain open for administrator review.`
             });
             
             await github.rest.issues.removeLabel({
@@ -264,7 +296,9 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number,
               name: 'copilot-request'
-            }).catch(() => {});
+            }).catch(error => {
+              console.error('Failed to remove label "copilot-request":', error);
+            });
 
   remove_github_copilot_license:
     name: Remove GitHub Copilot License
@@ -288,7 +322,7 @@ jobs:
         uses: ./.github/actions/validate-org-membership
         with:
           github-token: ${{ steps.get_workflow_token.outputs.token }}
-          username: ${{ github.event.issue.user.login }}
+          username: ${{ github.event.sender.login }}
           org: ${{ github.repository_owner }}
 
       # Comment if user is not an org member
@@ -309,7 +343,9 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number,
               name: 'copilot-remove'
-            }).catch(() => {});
+            }).catch(error => {
+              console.error('Failed to remove label "copilot-remove":', error);
+            });
             
             await github.rest.issues.update({
               owner: context.repo.owner,
@@ -317,6 +353,19 @@ jobs:
               issue_number: context.issue.number,
               state: 'closed',
               state_reason: 'not_planned'
+            });
+
+      # Comment if validation encountered an internal error
+      - name: Comment on validation error
+        if: steps.validate_membership.outputs.status == 'error'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '⚠️ Copilot license removal validation failed due to a workflow configuration error.\n\nPlease contact a repository administrator to investigate.\n\nThis issue will remain open for administrator review.'
             });
 
       - name: Remove GitHub Copilot license
@@ -327,7 +376,7 @@ jobs:
           github-token: ${{ steps.get_workflow_token.outputs.token }}
           result-encoding: string
           script: |
-            const username = context.payload.issue.user.login;
+            const username = context.payload.sender.login;
             console.log(`Attempting to remove Copilot license from: ${username}`);
             
             try {
@@ -377,7 +426,9 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number,
               name: 'copilot-remove'
-            }).catch(() => {});
+            }).catch(error => {
+              console.error('Failed to remove label "copilot-remove":', error);
+            });
             
             await github.rest.issues.update({
               owner: context.repo.owner,
@@ -404,7 +455,9 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number,
               name: 'copilot-remove'
-            }).catch(() => {});
+            }).catch(error => {
+              console.error('Failed to remove label "copilot-remove":', error);
+            });
             
             await github.rest.issues.update({
               owner: context.repo.owner,
@@ -431,19 +484,28 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number,
               name: 'copilot-remove'
-            }).catch(() => {});
+            }).catch(error => {
+              console.error('Failed to remove label "copilot-remove":', error);
+            });
 
       - name: Comment GitHub Issue on failure
         if: steps.remove_license.outputs.result == 'failure'
         uses: actions/github-script@v7
         with:
           script: |
-            const errorMessage = '${{ steps.remove_license.outputs.error_message }}';
+            function escapeMarkdown(text) {
+              if (!text) return '';
+              return String(text).replace(/[\\`*_{}\[\]()#+\-.!$]/g, '\\$&');
+            }
+
+            const rawErrorMessage = '${{ steps.remove_license.outputs.error_message }}';
+            const safeErrorMessage = escapeMarkdown(rawErrorMessage) || 'Unknown error';
+
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: `❌ Failed to remove the GitHub Copilot license.\n\n**Error:** ${errorMessage || 'Unknown error'}\n\nPlease contact the organization administrator for assistance.\n\nThis issue will remain open for administrator review.`
+              body: `❌ Failed to remove the GitHub Copilot license.\n\n**Error:** ${safeErrorMessage}\n\nPlease contact the organization administrator for assistance.\n\nThis issue will remain open for administrator review.`
             });
             
             await github.rest.issues.removeLabel({
@@ -451,4 +513,6 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number,
               name: 'copilot-remove'
-            }).catch(() => {});
+            }).catch(error => {
+              console.error('Failed to remove label "copilot-remove":', error);
+            });

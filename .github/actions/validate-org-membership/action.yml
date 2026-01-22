@@ -20,15 +20,22 @@ runs:
     - name: Validate membership
       id: validate
       uses: actions/github-script@v7
+      env:
+        USERNAME_JSON: ${{ toJSON(inputs.username) }}
+        ORG_JSON: ${{ toJSON(inputs.org) }}
       with:
         github-token: ${{ inputs.github-token }}
         result-encoding: string
         script: |
-          const username = process.env.USERNAME;
-          const org = process.env.ORG;
+          const username = JSON.parse(process.env.USERNAME_JSON);
+          const org = JSON.parse(process.env.ORG_JSON);
           
-          if (!username || !org) {
-            core.setFailed('Missing required inputs: username or org');
+          if (!username) {
+            console.error('Missing required input: username');
+            return 'error';
+          }
+          if (!org) {
+            console.error('Missing required input: org');
             return 'error';
           }
           
@@ -45,6 +52,3 @@ runs:
             console.error(`${username} is not an org member`);
             return 'invalid';
           }
-      env:
-        USERNAME: ${{ inputs.username }}
-        ORG: ${{ inputs.org }}
