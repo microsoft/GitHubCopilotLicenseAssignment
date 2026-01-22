@@ -45,5 +45,6 @@ runs:
               return;
             }
             console.error(`Failed to remove label "${labelName}":`, error);
-            throw error;
+            // Do not rethrow to avoid failing the workflow; error is logged instead.
+            return;
           });
