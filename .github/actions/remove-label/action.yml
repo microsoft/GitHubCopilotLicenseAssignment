@@ -44,7 +44,6 @@ runs:
               console.warn(`Label "${labelName}" not found when attempting removal; nothing to remove.`);
               return;
             }
-            console.error(`Failed to remove label "${labelName}":`, error);
-            // Do not rethrow to avoid failing the workflow; error is logged instead.
-            return;
+            // Rethrow unexpected errors so the workflow can fail and surface the issue.
+            throw error;
           });
