@@ -356,7 +356,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: '❌ You must be a member of the **${{ github.repository_owner }}** organization.\n\nPlease contact the organization administrator if you believe this is an error.'
+              body: '❌ You must be a member of the **${{ github.repository_owner }}** organization to request removal of a GitHub Copilot license.\n\nPlease contact the organization administrator if you believe this is an error.'
             });
 
       - name: Remove copilot-remove label after invalid membership
