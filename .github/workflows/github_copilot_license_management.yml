@@ -129,7 +129,8 @@ jobs:
                   return 'seat_limit';
                 }
               } else if (error.status === 404) {
-                return 'user_not_found';
+                // 404 can mean the user is not eligible for Copilot or otherwise inaccessible, not necessarily missing from the org
+                return 'not_eligible_or_not_found';
               } else if (error.status === 403) {
                 return 'insufficient_permissions';
               }
