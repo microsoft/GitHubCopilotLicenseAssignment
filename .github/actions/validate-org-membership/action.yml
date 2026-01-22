@@ -1,0 +1,50 @@
+name: 'Validate Organization Membership'
+description: 'Validates that a user is a member of the organization'
+inputs:
+  github-token:
+    description: 'GitHub token with organization member read permissions'
+    required: true
+  username:
+    description: 'Username to validate'
+    required: true
+  org:
+    description: 'Organization name'
+    required: true
+outputs:
+  status:
+    description: 'Validation status: "valid", "invalid", or "error" (when inputs are missing)'
+    value: ${{ steps.validate.outputs.result }}
+runs:
+  using: 'composite'
+  steps:
+    - name: Validate membership
+      id: validate
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ inputs.github-token }}
+        result-encoding: string
+        script: |
+          const username = process.env.USERNAME;
+          const org = process.env.ORG;
+          
+          if (!username || !org) {
+            core.setFailed('Missing required inputs: username or org');
+            return 'error';
+          }
+          
+          console.log(`Validating org membership for: ${username}`);
+
+          try {
+            await github.rest.orgs.getMembershipForUser({
+              org: org,
+              username: username
+            });
+            console.log(`${username} is a valid org member`);
+            return 'valid';
+          } catch (error) {
+            console.error(`${username} is not an org member`);
+            return 'invalid';
+          }
+      env:
+        USERNAME: ${{ inputs.username }}
+        ORG: ${{ inputs.org }}
