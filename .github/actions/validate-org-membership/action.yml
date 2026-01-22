@@ -12,7 +12,7 @@ inputs:
     required: true
 outputs:
   status:
-    description: 'Validation status: "valid", "invalid", or "error" (when inputs are missing)'
+    description: 'Validation status: "valid" (member found), "invalid" (404 - not a member), or "error" (other API errors)'
     value: ${{ steps.validate.outputs.result }}
 runs:
   using: 'composite'
@@ -30,15 +30,6 @@ runs:
           const username = JSON.parse(process.env.USERNAME_JSON);
           const org = JSON.parse(process.env.ORG_JSON);
           
-          if (!username) {
-            console.error('Missing required input: username');
-            return 'error';
-          }
-          if (!org) {
-            console.error('Missing required input: org');
-            return 'error';
-          }
-          
           console.log(`Validating org membership for: ${username}`);
 
           try {
@@ -49,6 +40,11 @@ runs:
             console.log(`${username} is a valid org member`);
             return 'valid';
           } catch (error) {
-            console.error(`${username} is not an org member`);
-            return 'invalid';
+            if (error && error.status === 404) {
+              console.error(`${username} is not an org member`);
+              return 'invalid';
+            }
+
+            console.error(`Error while checking org membership for ${username}:`, error);
+            return 'error';
           }

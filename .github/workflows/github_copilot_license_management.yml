@@ -15,7 +15,7 @@ on:
 # Prevent concurrent runs for the same issue
 concurrency:
   group: copilot-license-${{ github.event.issue.number }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 # This workflow contains two jobs: assign_github_copilot_license and remove_github_copilot_license
 jobs:
@@ -46,7 +46,7 @@ jobs:
           org: ${{ github.repository_owner }}
 
       # Comment if user is not an org member
-      - name: Comment on invalid membership
+      - name: Comment on invalid membership for license assignment
         if: steps.validate_membership.outputs.status == 'invalid'
         uses: actions/github-script@v7
         with:
@@ -64,7 +64,12 @@ jobs:
               issue_number: context.issue.number,
               name: 'copilot-request'
             }).catch(error => {
+              if (error && error.status === 404) {
+                console.warn('Label "copilot-request" not found when attempting removal; nothing to remove.');
+                return;
+              }
               console.error('Failed to remove label "copilot-request":', error);
+              throw error;
             });
             
             await github.rest.issues.update({
@@ -76,7 +81,7 @@ jobs:
             });
 
       # Comment if validation encountered an internal error
-      - name: Comment on validation error
+      - name: Comment on validation error for license assignment
         if: steps.validate_membership.outputs.status == 'error'
         uses: actions/github-script@v7
         with:
@@ -157,7 +162,12 @@ jobs:
               issue_number: context.issue.number,
               name: 'copilot-request'
             }).catch(error => {
+              if (error && error.status === 404) {
+                console.warn('Label "copilot-request" not found when attempting removal; nothing to remove.');
+                return;
+              }
               console.error('Failed to remove label "copilot-request":', error);
+              throw error;
             });
             
             await github.rest.issues.update({
@@ -186,7 +196,12 @@ jobs:
               issue_number: context.issue.number,
               name: 'copilot-request'
             }).catch(error => {
+              if (error && error.status === 404) {
+                console.warn('Label "copilot-request" not found when attempting removal; nothing to remove.');
+                return;
+              }
               console.error('Failed to remove label "copilot-request":', error);
+              throw error;
             });
             
             await github.rest.issues.update({
@@ -215,7 +230,12 @@ jobs:
               issue_number: context.issue.number,
               name: 'copilot-request'
             }).catch(error => {
+              if (error && error.status === 404) {
+                console.warn('Label "copilot-request" not found when attempting removal; nothing to remove.');
+                return;
+              }
               console.error('Failed to remove label "copilot-request":', error);
+              throw error;
             });
 
       # Handle user not found
@@ -237,7 +257,12 @@ jobs:
               issue_number: context.issue.number,
               name: 'copilot-request'
             }).catch(error => {
+              if (error && error.status === 404) {
+                console.warn('Label "copilot-request" not found when attempting removal; nothing to remove.');
+                return;
+              }
               console.error('Failed to remove label "copilot-request":', error);
+              throw error;
             });
             
             await github.rest.issues.update({
@@ -267,7 +292,12 @@ jobs:
               issue_number: context.issue.number,
               name: 'copilot-request'
             }).catch(error => {
+              if (error && error.status === 404) {
+                console.warn('Label "copilot-request" not found when attempting removal; nothing to remove.');
+                return;
+              }
               console.error('Failed to remove label "copilot-request":', error);
+              throw error;
             });
 
       # This step runs on any other failure
@@ -297,7 +327,12 @@ jobs:
               issue_number: context.issue.number,
               name: 'copilot-request'
             }).catch(error => {
+              if (error && error.status === 404) {
+                console.warn('Label "copilot-request" not found when attempting removal; nothing to remove.');
+                return;
+              }
               console.error('Failed to remove label "copilot-request":', error);
+              throw error;
             });
 
   remove_github_copilot_license:
@@ -326,7 +361,7 @@ jobs:
           org: ${{ github.repository_owner }}
 
       # Comment if user is not an org member
-      - name: Comment on invalid membership
+      - name: Comment on invalid membership for license removal
         if: steps.validate_membership.outputs.status == 'invalid'
         uses: actions/github-script@v7
         with:
@@ -344,7 +379,12 @@ jobs:
               issue_number: context.issue.number,
               name: 'copilot-remove'
             }).catch(error => {
+              if (error && error.status === 404) {
+                console.warn('Label "copilot-remove" not found when attempting removal; nothing to remove.');
+                return;
+              }
               console.error('Failed to remove label "copilot-remove":', error);
+              throw error;
             });
             
             await github.rest.issues.update({
@@ -356,7 +396,7 @@ jobs:
             });
 
       # Comment if validation encountered an internal error
-      - name: Comment on validation error
+      - name: Comment on validation error for license removal
         if: steps.validate_membership.outputs.status == 'error'
         uses: actions/github-script@v7
         with:
@@ -427,7 +467,12 @@ jobs:
               issue_number: context.issue.number,
               name: 'copilot-remove'
             }).catch(error => {
+              if (error && error.status === 404) {
+                console.warn('Label "copilot-remove" not found when attempting removal; nothing to remove.');
+                return;
+              }
               console.error('Failed to remove label "copilot-remove":', error);
+              throw error;
             });
             
             await github.rest.issues.update({
@@ -456,7 +501,12 @@ jobs:
               issue_number: context.issue.number,
               name: 'copilot-remove'
             }).catch(error => {
+              if (error && error.status === 404) {
+                console.warn('Label "copilot-remove" not found when attempting removal; nothing to remove.');
+                return;
+              }
               console.error('Failed to remove label "copilot-remove":', error);
+              throw error;
             });
             
             await github.rest.issues.update({
@@ -485,7 +535,12 @@ jobs:
               issue_number: context.issue.number,
               name: 'copilot-remove'
             }).catch(error => {
+              if (error && error.status === 404) {
+                console.warn('Label "copilot-remove" not found when attempting removal; nothing to remove.');
+                return;
+              }
               console.error('Failed to remove label "copilot-remove":', error);
+              throw error;
             });
 
       - name: Comment GitHub Issue on failure
@@ -514,5 +569,10 @@ jobs:
               issue_number: context.issue.number,
               name: 'copilot-remove'
             }).catch(error => {
+              if (error && error.status === 404) {
+                console.warn('Label "copilot-remove" not found when attempting removal; nothing to remove.');
+                return;
+              }
               console.error('Failed to remove label "copilot-remove":', error);
+              throw error;
             });
