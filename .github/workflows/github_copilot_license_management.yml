@@ -35,29 +35,15 @@ jobs:
       # Validate that the requester is an organization member
       - name: Validate organization membership
         id: validate_membership
-        uses: actions/github-script@v7
+        uses: ./.github/actions/validate-org-membership
         with:
           github-token: ${{ steps.get_workflow_token.outputs.token }}
-          result-encoding: string
-          script: |
-            const username = context.payload.issue.user.login;
-            console.log(`Validating org membership for: ${username}`);
-            
-            try {
-              await github.rest.orgs.getMembershipForUser({
-                org: context.repo.owner,
-                username: username
-              });
-              console.log(`${username} is a valid org member`);
-              return 'valid';
-            } catch (error) {
-              console.error(`${username} is not an org member`);
-              return 'invalid';
-            }
+          username: ${{ github.event.issue.user.login }}
+          org: ${{ github.repository_owner }}
 
       # Comment if user is not an org member
       - name: Comment on invalid membership
-        if: steps.validate_membership.outputs.result == 'invalid'
+        if: steps.validate_membership.outputs.status == 'invalid'
         uses: actions/github-script@v7
         with:
           script: |
@@ -85,7 +71,7 @@ jobs:
 
       # This step tries to assign a license and handles specific errors
       - name: Assign GitHub Copilot license
-        if: steps.validate_membership.outputs.result == 'valid'
+        if: steps.validate_membership.outputs.status == 'valid'
         id: assign_license
         uses: actions/github-script@v7
         with:
@@ -96,12 +82,9 @@ jobs:
             console.log(`Attempting to assign Copilot license to: ${username}`);
             
             try {
-              await github.request('POST /orgs/{org}/copilot/billing/selected_users', {
+              await github.rest.copilot.addCopilotSeatsForUsers({
                 org: context.repo.owner,
-                selected_usernames: [username],
-                headers: {
-                  'X-GitHub-Api-Version': '2022-11-28'
-                }
+                selected_usernames: [username]
               });
               console.log(`Successfully assigned license to ${username}`);
               core.summary.addRaw(`✅ Successfully assigned GitHub Copilot license to @${username}`, true);
@@ -126,7 +109,11 @@ jobs:
                 return 'insufficient_permissions';
               }
               
-              core.setOutput('error_message', error.message);
+              // Sanitize error message to prevent injection attacks
+              const sanitizedError = String(error.message || 'Unknown error')
+                .replace(/[`<>]/g, '')
+                .substring(0, 500);
+              core.setOutput('error_message', sanitizedError);
               return 'failure';
             }
 
@@ -288,29 +275,15 @@ jobs:
       # Validate that the requester is an organization member
       - name: Validate organization membership
         id: validate_membership
-        uses: actions/github-script@v7
+        uses: ./.github/actions/validate-org-membership
         with:
           github-token: ${{ steps.get_workflow_token.outputs.token }}
-          result-encoding: string
-          script: |
-            const username = context.payload.issue.user.login;
-            console.log(`Validating org membership for: ${username}`);
-            
-            try {
-              await github.rest.orgs.getMembershipForUser({
-                org: context.repo.owner,
-                username: username
-              });
-              console.log(`${username} is a valid org member`);
-              return 'valid';
-            } catch (error) {
-              console.error(`${username} is not an org member`);
-              return 'invalid';
-            }
+          username: ${{ github.event.issue.user.login }}
+          org: ${{ github.repository_owner }}
 
       # Comment if user is not an org member
       - name: Comment on invalid membership
-        if: steps.validate_membership.outputs.result == 'invalid'
+        if: steps.validate_membership.outputs.status == 'invalid'
         uses: actions/github-script@v7
         with:
           script: |
@@ -337,7 +310,7 @@ jobs:
             });
 
       - name: Remove GitHub Copilot license
-        if: steps.validate_membership.outputs.result == 'valid'
+        if: steps.validate_membership.outputs.status == 'valid'
         id: remove_license
         uses: actions/github-script@v7
         with:
@@ -348,12 +321,9 @@ jobs:
             console.log(`Attempting to remove Copilot license from: ${username}`);
             
             try {
-              await github.request('DELETE /orgs/{org}/copilot/billing/selected_users', {
+              await github.rest.copilot.removeCopilotSeatsForUsers({
                 org: context.repo.owner,
-                selected_usernames: [username],
-                headers: {
-                  'X-GitHub-Api-Version': '2022-11-28'
-                }
+                selected_usernames: [username]
               });
               console.log(`Successfully removed license from ${username}`);
               core.summary.addRaw(`✅ Successfully removed GitHub Copilot license from @${username}`, true);
@@ -370,7 +340,11 @@ jobs:
                 return 'insufficient_permissions';
               }
               
-              core.setOutput('error_message', error.message);
+              // Sanitize error message to prevent injection attacks
+              const sanitizedError = String(error.message || 'Unknown error')
+                .replace(/[`<>]/g, '')
+                .substring(0, 500);
+              core.setOutput('error_message', sanitizedError);
               return 'failure';
             }
 
