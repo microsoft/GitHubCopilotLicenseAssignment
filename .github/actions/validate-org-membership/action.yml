@@ -27,8 +27,12 @@ runs:
           const username = '${{ inputs.username }}';
           const org = '${{ inputs.org }}';
           
-          if (!username || !org) {
-            console.error('Missing required inputs: username or org');
+          if (!username) {
+            console.error('Missing required input: username');
+            return 'error';
+          }
+          if (!org) {
+            console.error('Missing required input: org');
             return 'error';
           }
           
