@@ -40,7 +40,7 @@ runs:
             console.log(`${username} is a valid org member`);
             return 'valid';
           } catch (error) {
-            if (error?.status === 404) {
+            if (error && error.status === 404) {
               console.error(`${username} is not an org member`);
               return 'invalid';
             }
