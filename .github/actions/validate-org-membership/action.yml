@@ -28,8 +28,8 @@ runs:
           const org = process.env.ORG;
           
           if (!username || !org) {
-            console.error('Missing required inputs: username or org');
-            return 'invalid';
+            core.setFailed('Missing required inputs: username or org');
+            return 'error';
           }
           
           console.log(`Validating org membership for: ${username}`);

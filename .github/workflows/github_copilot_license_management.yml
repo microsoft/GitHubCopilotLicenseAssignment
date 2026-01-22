@@ -24,6 +24,10 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.label.name == 'copilot-request'
     steps:
+      # Checkout repository to access local composite actions
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       # This step gets a GitHub App installation access token
       - name: Get Token
         id: get_workflow_token
@@ -111,7 +115,7 @@ jobs:
               
               // Sanitize error message to prevent injection attacks
               const sanitizedError = String(error.message || 'Unknown error')
-                .replace(/[`<>"';()[\]{}]/g, '')
+                .replace(/[`<>"']/g, '')
                 .replace(/\s+/g, ' ')
                 .trim()
                 .substring(0, 500);
@@ -267,6 +271,10 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.label.name == 'copilot-remove'
     steps:
+      # Checkout repository to access local composite actions
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Get Token
         id: get_workflow_token
         uses: actions/create-github-app-token@v1
@@ -344,7 +352,7 @@ jobs:
               
               // Sanitize error message to prevent injection attacks
               const sanitizedError = String(error.message || 'Unknown error')
-                .replace(/[`<>"';()[\]{}]/g, '')
+                .replace(/[`<>"']/g, '')
                 .replace(/\s+/g, ' ')
                 .trim()
                 .substring(0, 500);
