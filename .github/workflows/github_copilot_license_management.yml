@@ -1,4 +1,10 @@
 name: GitHub Copilot License Management
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
 # This workflow is triggered when an issue is labeled
 on:
   issues:
