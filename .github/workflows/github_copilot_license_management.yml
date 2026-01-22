@@ -5,6 +5,11 @@ on:
     types:
       - labeled
 
+# Limit the default GITHUB_TOKEN permissions to the minimum required
+permissions:
+  issues: write
+  contents: read
+
 # This workflow uses the GitHub Token to comment on the issues and close them
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
