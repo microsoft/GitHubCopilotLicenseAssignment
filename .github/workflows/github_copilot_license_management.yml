@@ -1,5 +1,6 @@
 name: GitHub Copilot License Management
 
+# Limit the default GITHUB_TOKEN permissions to the minimum required
 permissions:
   contents: read
   issues: write
@@ -10,11 +11,6 @@ on:
   issues:
     types:
       - labeled
-
-# Limit the default GITHUB_TOKEN permissions to the minimum required
-permissions:
-  issues: write
-  contents: read
 
 # This workflow uses the GitHub Token to comment on the issues and close them
 env:
