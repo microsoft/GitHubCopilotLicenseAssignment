@@ -24,8 +24,8 @@ runs:
         github-token: ${{ inputs.github-token }}
         result-encoding: string
         script: |
-          const username = '${{ inputs.username }}';
-          const org = '${{ inputs.org }}';
+          const username = process.env.USERNAME;
+          const org = process.env.ORG;
           console.log(`Validating org membership for: ${username}`);
 
           try {
@@ -39,3 +39,6 @@ runs:
             console.error(`${username} is not an org member`);
             return 'invalid';
           }
+      env:
+        USERNAME: ${{ inputs.username }}
+        ORG: ${{ inputs.org }}

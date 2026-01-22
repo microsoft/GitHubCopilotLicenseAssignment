@@ -111,7 +111,9 @@ jobs:
               
               // Sanitize error message to prevent injection attacks
               const sanitizedError = String(error.message || 'Unknown error')
-                .replace(/[`<>]/g, '')
+                .replace(/[`<>"';\(\)\[\]\{\}]/g, '')
+                .replace(/\s+/g, ' ')
+                .trim()
                 .substring(0, 500);
               core.setOutput('error_message', sanitizedError);
               return 'failure';
@@ -342,7 +344,9 @@ jobs:
               
               // Sanitize error message to prevent injection attacks
               const sanitizedError = String(error.message || 'Unknown error')
-                .replace(/[`<>]/g, '')
+                .replace(/[`<>"';\(\)\[\]\{\}]/g, '')
+                .replace(/\s+/g, ' ')
+                .trim()
                 .substring(0, 500);
               core.setOutput('error_message', sanitizedError);
               return 'failure';
