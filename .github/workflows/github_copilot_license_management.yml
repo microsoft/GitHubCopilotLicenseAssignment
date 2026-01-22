@@ -187,7 +187,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: 'Successfully assigned the GitHub Copilot license. <br> <br> Here are some resources to help you get started with GitHub Copilot: <br><ul><li><a href="https://learn.microsoft.com/training/paths/copilot">GitHub Copilot Fundamentals MS Learn Path</a></li><li><a href="https://resources.github.com/learn/pathways/copilot/essentials/essentials-of-github-copilot">Essentials of GitHub Copilot</a></li><li><a href="https://www.youtube.com/playlist?list=PLlrxD0HtieHgr23PS05FIncnih4dH9Na5">Introduction to GitHub Copilot</a></li><li><a href="https://github.com/microsoft/Mastering-GitHub-Copilot-for-Paired-Programming">Mastering GitHub Copilot for AI Paired Programming</a></li></ul>'
+              body: 'Successfully assigned the GitHub Copilot license.\n\nHere are some resources to help you get started with GitHub Copilot:\n- [GitHub Copilot Fundamentals MS Learn Path](https://learn.microsoft.com/training/paths/copilot)\n- [Essentials of GitHub Copilot](https://resources.github.com/learn/pathways/copilot/essentials/essentials-of-github-copilot)\n- [Introduction to GitHub Copilot](https://www.youtube.com/playlist?list=PLlrxD0HtieHgr23PS05FIncnih4dH9Na5)\n- [Mastering GitHub Copilot for AI Paired Programming](https://github.com/microsoft/Mastering-GitHub-Copilot-for-Paired-Programming)'
             });
             
             await github.rest.issues.removeLabel({
