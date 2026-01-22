@@ -24,11 +24,11 @@ runs:
         github-token: ${{ inputs.github-token }}
         result-encoding: string
         script: |
-          const username = process.env.USERNAME;
-          const org = process.env.ORG;
+          const username = '${{ inputs.username }}';
+          const org = '${{ inputs.org }}';
           
           if (!username || !org) {
-            core.setFailed('Missing required inputs: username or org');
+            console.error('Missing required inputs: username or org');
             return 'error';
           }
           
@@ -45,6 +45,3 @@ runs:
             console.error(`${username} is not an org member`);
             return 'invalid';
           }
-      env:
-        USERNAME: ${{ inputs.username }}
-        ORG: ${{ inputs.org }}
