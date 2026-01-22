@@ -26,6 +26,12 @@ runs:
         script: |
           const username = process.env.USERNAME;
           const org = process.env.ORG;
+          
+          if (!username || !org) {
+            console.error('Missing required inputs: username or org');
+            return 'invalid';
+          }
+          
           console.log(`Validating org membership for: ${username}`);
 
           try {
