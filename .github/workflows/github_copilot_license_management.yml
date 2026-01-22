@@ -15,7 +15,7 @@ on:
 # Prevent concurrent runs for the same issue
 concurrency:
   group: copilot-license-${{ github.event.issue.number }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 # This workflow contains two jobs: assign_github_copilot_license and remove_github_copilot_license
 jobs:
@@ -42,7 +42,7 @@ jobs:
         uses: ./.github/actions/validate-org-membership
         with:
           github-token: ${{ steps.get_workflow_token.outputs.token }}
-          username: ${{ github.event.issue.user.login }}
+          username: ${{ github.event.sender.login }}
           org: ${{ github.repository_owner }}
 
       # Comment if user is not an org member
@@ -278,7 +278,7 @@ jobs:
           script: |
             function escapeMarkdown(text) {
               if (!text) return '';
-              return String(text).replace(/[\\`*_{}\[\]()#+\-.!]/g, '\\$&');
+              return String(text).replace(/[\\`*_{}\[\]()#+\-.!$]/g, '\\$&');
             }
 
             const rawErrorMessage = '${{ steps.assign_license.outputs.error_message }}';
@@ -495,7 +495,7 @@ jobs:
           script: |
             function escapeMarkdown(text) {
               if (!text) return '';
-              return String(text).replace(/[\\`*_{}\[\]()#+\-.!]/g, '\\$&');
+              return String(text).replace(/[\\`*_{}\[\]()#+\-.!$]/g, '\\$&');
             }
 
             const rawErrorMessage = '${{ steps.remove_license.outputs.error_message }}';
