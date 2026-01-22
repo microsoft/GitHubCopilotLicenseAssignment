@@ -23,14 +23,14 @@ runs:
       uses: actions/github-script@v7
       env:
         LABEL_NAME_JSON: ${{ toJSON(inputs.label-name) }}
-        ISSUE_NUMBER: ${{ inputs.issue-number }}
+        ISSUE_NUMBER_JSON: ${{ toJSON(inputs.issue-number) }}
         OWNER_JSON: ${{ toJSON(inputs.owner) }}
         REPO_JSON: ${{ toJSON(inputs.repo) }}
       with:
         github-token: ${{ inputs.github-token }}
         script: |
           const labelName = JSON.parse(process.env.LABEL_NAME_JSON);
-          const issueNumber = parseInt(process.env.ISSUE_NUMBER, 10);
+          const issueNumber = Number(JSON.parse(process.env.ISSUE_NUMBER_JSON));
           const owner = JSON.parse(process.env.OWNER_JSON);
           const repo = JSON.parse(process.env.REPO_JSON);
           
