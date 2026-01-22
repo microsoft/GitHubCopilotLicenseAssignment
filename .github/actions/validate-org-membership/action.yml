@@ -12,7 +12,7 @@ inputs:
     required: true
 outputs:
   status:
-    description: 'Validation status: "valid" or "invalid"'
+    description: 'Validation status: "valid", "invalid", or "error" (when inputs are missing)'
     value: ${{ steps.validate.outputs.result }}
 runs:
   using: 'composite'
