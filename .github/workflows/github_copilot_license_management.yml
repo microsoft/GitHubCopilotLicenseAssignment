@@ -12,9 +12,10 @@ on:
     types:
       - labeled
 
-# This workflow uses the GitHub Token to comment on the issues and close them
-env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+# Prevent concurrent runs for the same issue
+concurrency:
+  group: copilot-license-${{ github.event.issue.number }}
+  cancel-in-progress: false
 
 # This workflow contains two jobs: assign_github_copilot_license and remove_github_copilot_license
 jobs:
@@ -31,29 +32,101 @@ jobs:
           app-id: ${{ secrets.APPLICATION_ID }}
           private-key: ${{ secrets.APPLICATION_PRIVATE_KEY }}
 
+      # Validate that the requester is an organization member
+      - name: Validate organization membership
+        id: validate_membership
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.get_workflow_token.outputs.token }}
+          result-encoding: string
+          script: |
+            const username = context.payload.issue.user.login;
+            console.log(`Validating org membership for: ${username}`);
+            
+            try {
+              await github.rest.orgs.getMembershipForUser({
+                org: context.repo.owner,
+                username: username
+              });
+              console.log(`${username} is a valid org member`);
+              return 'valid';
+            } catch (error) {
+              console.error(`${username} is not an org member`);
+              return 'invalid';
+            }
+
+      # Comment if user is not an org member
+      - name: Comment on invalid membership
+        if: steps.validate_membership.outputs.result == 'invalid'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '❌ You must be a member of the **${{ github.repository_owner }}** organization to request a GitHub Copilot license.\n\nPlease contact the organization administrator if you believe this is an error.'
+            });
+            
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              name: 'copilot-request'
+            }).catch(() => {});
+            
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              state: 'closed',
+              state_reason: 'not_planned'
+            });
+
       # This step tries to assign a license and handles specific errors
       - name: Assign GitHub Copilot license
+        if: steps.validate_membership.outputs.result == 'valid'
         id: assign_license
         uses: actions/github-script@v7
         with:
           github-token: ${{ steps.get_workflow_token.outputs.token }}
           result-encoding: string
           script: |
+            const username = context.payload.issue.user.login;
+            console.log(`Attempting to assign Copilot license to: ${username}`);
+            
             try {
               await github.request('POST /orgs/{org}/copilot/billing/selected_users', {
                 org: context.repo.owner,
-                selected_usernames: [context.payload.sender.login],
+                selected_usernames: [username],
                 headers: {
                   'X-GitHub-Api-Version': '2022-11-28'
                 }
               });
+              console.log(`Successfully assigned license to ${username}`);
+              core.summary.addRaw(`✅ Successfully assigned GitHub Copilot license to @${username}`, true);
+              await core.summary.write();
               return 'success';
             } catch (error) {
-              if (error.status === 422 && error.message.includes('User already has Copilot access')) {
-                console.log('User already has a license.');
-                return 'already_exists';
+              console.error(`Error assigning license to ${username}:`, error.message);
+              
+              if (error.status === 422) {
+                if (error.message.includes('User already has Copilot access')) {
+                  core.summary.addRaw(`ℹ️ User @${username} already has an active Copilot license`, true);
+                  await core.summary.write();
+                  return 'already_exists';
+                } else if (error.message.includes('seat limit')) {
+                  core.summary.addRaw(`⚠️ Organization has reached seat limit. Cannot assign to @${username}`, true);
+                  await core.summary.write();
+                  return 'seat_limit';
+                }
+              } else if (error.status === 404) {
+                return 'user_not_found';
+              } else if (error.status === 403) {
+                return 'insufficient_permissions';
               }
-              console.error('Failed to assign license:', error);
+              
+              core.setOutput('error_message', error.message);
               return 'failure';
             }
 
@@ -63,23 +136,25 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            await github.request('POST /repos/{owner}/{repo}/issues/{issue_number}/comments', {
+            await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: 'It appears you already have an active GitHub Copilot license. No action was needed. Closing this request. ✅',
-              headers: {
-                'X-GitHub-Api-Version': '2022-11-28'
-              }
+              body: 'It appears you already have an active GitHub Copilot license. No action was needed. Closing this request. ✅'
             });
-            await github.request('PATCH /repos/{owner}/{repo}/issues/{issue_number}', {
+            
+            await github.rest.issues.removeLabel({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              state: 'closed',
-              headers: {
-                'X-GitHub-Api-Version': '2022-11-28'
-              }
+              name: 'copilot-request'
+            }).catch(() => {});
+            
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              state: 'closed'
             });
 
       # This step runs on successful assignment
@@ -88,24 +163,94 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            await github.request('POST /repos/{owner}/{repo}/issues/{issue_number}/comments', {
-              issue_number: context.issue.number,
+            await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: 'Successfully assigned the GitHub Copilot license. <br> <br> Here are some resources to help you get started with GitHub Copilot: <br><ul><li><a href="https://learn.microsoft.com/training/paths/copilot">GitHub Copilot Fundamentals MS Learn Path</a></li><li><a href="https://resources.github.com/learn/pathways/copilot/essentials/essentials-of-github-copilot">Essentials of GitHub Copilot</a></li><li><a href="https://www.youtube.com/playlist?list=PLlrxD0HtieHgr23PS05FIncnih4dH9Na5">Introduction to GitHub Copilot</a></li><li><a href="https://github.com/microsoft/Mastering-GitHub-Copilot-for-Paired-Programming">Mastering GitHub Copilot for AI Paired Programming</a></li></ul>',
-              headers: {
-                'X-GitHub-Api-Version': '2022-11-28'
-              }
+              issue_number: context.issue.number,
+              body: 'Successfully assigned the GitHub Copilot license. <br> <br> Here are some resources to help you get started with GitHub Copilot: <br><ul><li><a href="https://learn.microsoft.com/training/paths/copilot">GitHub Copilot Fundamentals MS Learn Path</a></li><li><a href="https://resources.github.com/learn/pathways/copilot/essentials/essentials-of-github-copilot">Essentials of GitHub Copilot</a></li><li><a href="https://www.youtube.com/playlist?list=PLlrxD0HtieHgr23PS05FIncnih4dH9Na5">Introduction to GitHub Copilot</a></li><li><a href="https://github.com/microsoft/Mastering-GitHub-Copilot-for-Paired-Programming">Mastering GitHub Copilot for AI Paired Programming</a></li></ul>'
             });
-            await github.request('PATCH /repos/{owner}/{repo}/issues/{issue_number}', {
-              issue_number: context.issue.number,
+            
+            await github.rest.issues.removeLabel({
               owner: context.repo.owner,
               repo: context.repo.repo,
+              issue_number: context.issue.number,
+              name: 'copilot-request'
+            }).catch(() => {});
+            
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              state: 'closed'
+            });
+
+      # Handle seat limit reached
+      - name: Comment on seat limit
+        if: steps.assign_license.outputs.result == 'seat_limit'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '⚠️ Unable to assign GitHub Copilot license: The organization has reached its seat limit.\n\nPlease contact the organization administrator to:\n- Increase the seat count, or\n- Free up existing seats\n\nThis issue will remain open for administrator review.'
+            });
+            
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              name: 'copilot-request'
+            }).catch(() => {});
+
+      # Handle user not found
+      - name: Comment on user not found
+        if: steps.assign_license.outputs.result == 'user_not_found'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '❌ User not found in the organization. Please ensure you are a member of the organization before requesting a Copilot license.'
+            });
+            
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              name: 'copilot-request'
+            }).catch(() => {});
+            
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
               state: 'closed',
-              headers: {
-                'X-GitHub-Api-Version': '2022-11-28'
-              }
+              state_reason: 'not_planned'
             });
+
+      # Handle insufficient permissions
+      - name: Comment on insufficient permissions
+        if: steps.assign_license.outputs.result == 'insufficient_permissions'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '🔒 Insufficient permissions to assign Copilot license.\n\nThe GitHub App requires the following permissions:\n- `members: read`\n- `copilot_business: write`\n\nPlease contact the organization administrator to configure the GitHub App correctly.\n\nThis issue will remain open for administrator review.'
+            });
+            
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              name: 'copilot-request'
+            }).catch(() => {});
 
       # This step runs on any other failure
       - name: Comment GitHub Issue on failure
@@ -113,15 +258,20 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            await github.request('POST /repos/{owner}/{repo}/issues/{issue_number}/comments', {
-              issue_number: context.issue.number,
+            const errorMessage = '${{ steps.assign_license.outputs.error_message }}';
+            await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: 'Failed assigning the GitHub Copilot license. Please contact the organization administrator.',
-              headers: {
-                'X-GitHub-Api-Version': '2022-11-28'
-              }
+              issue_number: context.issue.number,
+              body: `❌ Failed to assign the GitHub Copilot license.\n\n**Error:** ${errorMessage || 'Unknown error'}\n\nPlease contact the organization administrator for assistance.\n\nThis issue will remain open for administrator review.`
             });
+            
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              name: 'copilot-request'
+            }).catch(() => {});
 
   remove_github_copilot_license:
     name: Remove GitHub Copilot License
@@ -135,24 +285,92 @@ jobs:
           app-id: ${{ secrets.APPLICATION_ID }}
           private-key: ${{ secrets.APPLICATION_PRIVATE_KEY }}
 
+      # Validate that the requester is an organization member
+      - name: Validate organization membership
+        id: validate_membership
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.get_workflow_token.outputs.token }}
+          result-encoding: string
+          script: |
+            const username = context.payload.issue.user.login;
+            console.log(`Validating org membership for: ${username}`);
+            
+            try {
+              await github.rest.orgs.getMembershipForUser({
+                org: context.repo.owner,
+                username: username
+              });
+              console.log(`${username} is a valid org member`);
+              return 'valid';
+            } catch (error) {
+              console.error(`${username} is not an org member`);
+              return 'invalid';
+            }
+
+      # Comment if user is not an org member
+      - name: Comment on invalid membership
+        if: steps.validate_membership.outputs.result == 'invalid'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '❌ You must be a member of the **${{ github.repository_owner }}** organization.\n\nPlease contact the organization administrator if you believe this is an error.'
+            });
+            
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              name: 'copilot-remove'
+            }).catch(() => {});
+            
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              state: 'closed',
+              state_reason: 'not_planned'
+            });
+
       - name: Remove GitHub Copilot license
+        if: steps.validate_membership.outputs.result == 'valid'
         id: remove_license
         uses: actions/github-script@v7
         with:
           github-token: ${{ steps.get_workflow_token.outputs.token }}
           result-encoding: string
           script: |
+            const username = context.payload.issue.user.login;
+            console.log(`Attempting to remove Copilot license from: ${username}`);
+            
             try {
               await github.request('DELETE /orgs/{org}/copilot/billing/selected_users', {
                 org: context.repo.owner,
-                selected_usernames: [context.payload.sender.login],
+                selected_usernames: [username],
                 headers: {
                   'X-GitHub-Api-Version': '2022-11-28'
                 }
               });
+              console.log(`Successfully removed license from ${username}`);
+              core.summary.addRaw(`✅ Successfully removed GitHub Copilot license from @${username}`, true);
+              await core.summary.write();
               return 'success';
             } catch (error) {
-              console.error('Failed to remove license:', error);
+              console.error(`Error removing license from ${username}:`, error.message);
+              
+              if (error.status === 404) {
+                core.summary.addRaw(`ℹ️ User @${username} does not have an active Copilot license`, true);
+                await core.summary.write();
+                return 'no_license';
+              } else if (error.status === 403) {
+                return 'insufficient_permissions';
+              }
+              
+              core.setOutput('error_message', error.message);
               return 'failure';
             }
 
@@ -161,36 +379,90 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            await github.request('POST /repos/{owner}/{repo}/issues/{issue_number}/comments', {
-              issue_number: context.issue.number,
+            await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: 'Successfully removed the GitHub Copilot license.',
-              headers: {
-                'X-GitHub-Api-Version': '2022-11-28'
-              }
-            });
-            await github.request('PATCH /repos/{owner}/{repo}/issues/{issue_number}', {
               issue_number: context.issue.number,
+              body: '✅ Successfully removed the GitHub Copilot license.'
+            });
+            
+            await github.rest.issues.removeLabel({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              state: 'closed',
-              headers: {
-                'X-GitHub-Api-Version': '2022-11-28'
-              }
+              issue_number: context.issue.number,
+              name: 'copilot-remove'
+            }).catch(() => {});
+            
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              state: 'closed'
             });
+
+      # Handle user with no license
+      - name: Comment on no license
+        if: steps.remove_license.outputs.result == 'no_license'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: 'ℹ️ You do not currently have a GitHub Copilot license assigned. No action was needed.'
+            });
+            
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              name: 'copilot-remove'
+            }).catch(() => {});
+            
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              state: 'closed'
+            });
+
+      # Handle insufficient permissions
+      - name: Comment on insufficient permissions for removal
+        if: steps.remove_license.outputs.result == 'insufficient_permissions'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '🔒 Insufficient permissions to remove Copilot license.\n\nThe GitHub App requires the following permissions:\n- `members: read`\n- `copilot_business: write`\n\nPlease contact the organization administrator to configure the GitHub App correctly.\n\nThis issue will remain open for administrator review.'
+            });
+            
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              name: 'copilot-remove'
+            }).catch(() => {});
 
       - name: Comment GitHub Issue on failure
         if: steps.remove_license.outputs.result == 'failure'
         uses: actions/github-script@v7
         with:
           script: |
-            await github.request('POST /repos/{owner}/{repo}/issues/{issue_number}/comments', {
-              issue_number: context.issue.number,
+            const errorMessage = '${{ steps.remove_license.outputs.error_message }}';
+            await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: 'Failed removing the GitHub Copilot license. Please contact the organization administrator.',
-              headers: {
-                'X-GitHub-Api-Version': '2022-11-28'
-              }
+              issue_number: context.issue.number,
+              body: `❌ Failed to remove the GitHub Copilot license.\n\n**Error:** ${errorMessage || 'Unknown error'}\n\nPlease contact the organization administrator for assistance.\n\nThis issue will remain open for administrator review.`
             });
+            
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              name: 'copilot-remove'
+            }).catch(() => {});
