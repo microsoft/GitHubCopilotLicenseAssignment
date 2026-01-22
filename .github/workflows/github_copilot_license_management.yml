@@ -426,11 +426,10 @@ jobs:
                 return 'insufficient_permissions';
               }
               
-              // Sanitize error message to prevent injection attacks
-              const sanitizedError = String(error.message || 'Unknown error')
-                .replace(/[`<>"']/g, '')
-                .replace(/\s+/g, ' ')
-                .trim()
+              // Sanitize error message to prevent injection attacks (use the same JSON.stringify-based approach as elsewhere)
+              const rawMessage = String(error && error.message ? error.message : 'Unknown error');
+              const sanitizedError = JSON.stringify(rawMessage)
+                .slice(1, -1) // remove surrounding quotes added by JSON.stringify
                 .substring(0, 500);
               core.setOutput('error_message', sanitizedError);
               return 'failure';
