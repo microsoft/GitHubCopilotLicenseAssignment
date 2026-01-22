@@ -1,0 +1,23 @@
+name: Remove GitHub Copilot License
+description: Request removal of your GitHub Copilot license from this organization.
+title: "Remove GitHub Copilot License"
+labels:
+  - copilot-remove
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Removing your GitHub Copilot license
+
+        By opening this issue, you are requesting the removal of your GitHub Copilot license.
+
+        Once your request is processed, the GitHub Copilot functionality will be disabled for your account.  
+        You will receive a confirmation email from GitHub notifying you that your Copilot license has been successfully removed.
+        
+  - type: input
+    id: reason
+    attributes:
+      label: Optional comment / reason for license removal
+      description: You may briefly explain why you are removing the license (optional).
+      placeholder: "Optional explanation..."
