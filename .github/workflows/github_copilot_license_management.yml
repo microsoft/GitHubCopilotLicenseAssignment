@@ -57,21 +57,22 @@ jobs:
               issue_number: context.issue.number,
               body: '❌ You must be a member of the **${{ github.repository_owner }}** organization to request a GitHub Copilot license.\n\nPlease contact the organization administrator if you believe this is an error.'
             });
-            
-            await github.rest.issues.removeLabel({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              name: 'copilot-request'
-            }).catch(error => {
-              if (error && error.status === 404) {
-                console.warn('Label "copilot-request" not found when attempting removal; nothing to remove.');
-                return;
-              }
-              console.error('Failed to remove label "copilot-request":', error);
-              throw error;
-            });
-            
+
+      - name: Remove copilot-request label after invalid membership
+        if: steps.validate_membership.outputs.status == 'invalid'
+        uses: ./.github/actions/remove-label
+        with:
+          github-token: ${{ github.token }}
+          label-name: 'copilot-request'
+          issue-number: ${{ github.event.issue.number }}
+          owner: ${{ github.repository_owner }}
+          repo: ${{ github.event.repository.name }}
+
+      - name: Close issue after invalid membership
+        if: steps.validate_membership.outputs.status == 'invalid'
+        uses: actions/github-script@v7
+        with:
+          script: |
             await github.rest.issues.update({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -155,21 +156,22 @@ jobs:
               issue_number: context.issue.number,
               body: 'It appears you already have an active GitHub Copilot license. No action was needed. Closing this request. ✅'
             });
-            
-            await github.rest.issues.removeLabel({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              name: 'copilot-request'
-            }).catch(error => {
-              if (error && error.status === 404) {
-                console.warn('Label "copilot-request" not found when attempting removal; nothing to remove.');
-                return;
-              }
-              console.error('Failed to remove label "copilot-request":', error);
-              throw error;
-            });
-            
+
+      - name: Remove copilot-request label after existing license
+        if: steps.assign_license.outputs.result == 'already_exists'
+        uses: ./.github/actions/remove-label
+        with:
+          github-token: ${{ github.token }}
+          label-name: 'copilot-request'
+          issue-number: ${{ github.event.issue.number }}
+          owner: ${{ github.repository_owner }}
+          repo: ${{ github.event.repository.name }}
+
+      - name: Close issue after existing license
+        if: steps.assign_license.outputs.result == 'already_exists'
+        uses: actions/github-script@v7
+        with:
+          script: |
             await github.rest.issues.update({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -189,21 +191,22 @@ jobs:
               issue_number: context.issue.number,
               body: 'Successfully assigned the GitHub Copilot license.\n\nHere are some resources to help you get started with GitHub Copilot:\n- [GitHub Copilot Fundamentals MS Learn Path](https://learn.microsoft.com/training/paths/copilot)\n- [Essentials of GitHub Copilot](https://resources.github.com/learn/pathways/copilot/essentials/essentials-of-github-copilot)\n- [Introduction to GitHub Copilot](https://www.youtube.com/playlist?list=PLlrxD0HtieHgr23PS05FIncnih4dH9Na5)\n- [Mastering GitHub Copilot for AI Paired Programming](https://github.com/microsoft/Mastering-GitHub-Copilot-for-Paired-Programming)'
             });
-            
-            await github.rest.issues.removeLabel({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              name: 'copilot-request'
-            }).catch(error => {
-              if (error && error.status === 404) {
-                console.warn('Label "copilot-request" not found when attempting removal; nothing to remove.');
-                return;
-              }
-              console.error('Failed to remove label "copilot-request":', error);
-              throw error;
-            });
-            
+
+      - name: Remove copilot-request label after successful assignment
+        if: steps.assign_license.outputs.result == 'success'
+        uses: ./.github/actions/remove-label
+        with:
+          github-token: ${{ github.token }}
+          label-name: 'copilot-request'
+          issue-number: ${{ github.event.issue.number }}
+          owner: ${{ github.repository_owner }}
+          repo: ${{ github.event.repository.name }}
+
+      - name: Close issue after successful assignment
+        if: steps.assign_license.outputs.result == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
             await github.rest.issues.update({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -223,20 +226,16 @@ jobs:
               issue_number: context.issue.number,
               body: '⚠️ Unable to assign GitHub Copilot license: The organization has reached its seat limit.\n\nPlease contact the organization administrator to:\n- Increase the seat count, or\n- Free up existing seats\n\nThis issue will remain open for administrator review.'
             });
-            
-            await github.rest.issues.removeLabel({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              name: 'copilot-request'
-            }).catch(error => {
-              if (error && error.status === 404) {
-                console.warn('Label "copilot-request" not found when attempting removal; nothing to remove.');
-                return;
-              }
-              console.error('Failed to remove label "copilot-request":', error);
-              throw error;
-            });
+
+      - name: Remove copilot-request label after seat limit
+        if: steps.assign_license.outputs.result == 'seat_limit'
+        uses: ./.github/actions/remove-label
+        with:
+          github-token: ${{ github.token }}
+          label-name: 'copilot-request'
+          issue-number: ${{ github.event.issue.number }}
+          owner: ${{ github.repository_owner }}
+          repo: ${{ github.event.repository.name }}
 
       # Handle user not found
       - name: Comment on user not found
@@ -250,21 +249,22 @@ jobs:
               issue_number: context.issue.number,
               body: '❌ User not found in the organization. Please ensure you are a member of the organization before requesting a Copilot license.'
             });
-            
-            await github.rest.issues.removeLabel({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              name: 'copilot-request'
-            }).catch(error => {
-              if (error && error.status === 404) {
-                console.warn('Label "copilot-request" not found when attempting removal; nothing to remove.');
-                return;
-              }
-              console.error('Failed to remove label "copilot-request":', error);
-              throw error;
-            });
-            
+
+      - name: Remove copilot-request label after user not found
+        if: steps.assign_license.outputs.result == 'user_not_found'
+        uses: ./.github/actions/remove-label
+        with:
+          github-token: ${{ github.token }}
+          label-name: 'copilot-request'
+          issue-number: ${{ github.event.issue.number }}
+          owner: ${{ github.repository_owner }}
+          repo: ${{ github.event.repository.name }}
+
+      - name: Close issue after user not found
+        if: steps.assign_license.outputs.result == 'user_not_found'
+        uses: actions/github-script@v7
+        with:
+          script: |
             await github.rest.issues.update({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -285,20 +285,16 @@ jobs:
               issue_number: context.issue.number,
               body: '🔒 Insufficient permissions to assign Copilot license.\n\nThe GitHub App requires the following permissions:\n- `members: read`\n- `copilot_business: write`\n\nPlease contact the organization administrator to configure the GitHub App correctly.\n\nThis issue will remain open for administrator review.'
             });
-            
-            await github.rest.issues.removeLabel({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              name: 'copilot-request'
-            }).catch(error => {
-              if (error && error.status === 404) {
-                console.warn('Label "copilot-request" not found when attempting removal; nothing to remove.');
-                return;
-              }
-              console.error('Failed to remove label "copilot-request":', error);
-              throw error;
-            });
+
+      - name: Remove copilot-request label after insufficient permissions
+        if: steps.assign_license.outputs.result == 'insufficient_permissions'
+        uses: ./.github/actions/remove-label
+        with:
+          github-token: ${{ github.token }}
+          label-name: 'copilot-request'
+          issue-number: ${{ github.event.issue.number }}
+          owner: ${{ github.repository_owner }}
+          repo: ${{ github.event.repository.name }}
 
       # This step runs on any other failure
       - name: Comment GitHub Issue on failure
@@ -314,20 +310,16 @@ jobs:
               issue_number: context.issue.number,
               body: `❌ Failed to assign the GitHub Copilot license.\n\n**Error:** ${safeErrorMessage}\n\nPlease contact the organization administrator for assistance.\n\nThis issue will remain open for administrator review.`
             });
-            
-            await github.rest.issues.removeLabel({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              name: 'copilot-request'
-            }).catch(error => {
-              if (error && error.status === 404) {
-                console.warn('Label "copilot-request" not found when attempting removal; nothing to remove.');
-                return;
-              }
-              console.error('Failed to remove label "copilot-request":', error);
-              throw error;
-            });
+
+      - name: Remove copilot-request label after failure
+        if: steps.assign_license.outputs.result == 'failure'
+        uses: ./.github/actions/remove-label
+        with:
+          github-token: ${{ github.token }}
+          label-name: 'copilot-request'
+          issue-number: ${{ github.event.issue.number }}
+          owner: ${{ github.repository_owner }}
+          repo: ${{ github.event.repository.name }}
 
   remove_github_copilot_license:
     name: Remove GitHub Copilot License
@@ -366,21 +358,22 @@ jobs:
               issue_number: context.issue.number,
               body: '❌ You must be a member of the **${{ github.repository_owner }}** organization.\n\nPlease contact the organization administrator if you believe this is an error.'
             });
-            
-            await github.rest.issues.removeLabel({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              name: 'copilot-remove'
-            }).catch(error => {
-              if (error && error.status === 404) {
-                console.warn('Label "copilot-remove" not found when attempting removal; nothing to remove.');
-                return;
-              }
-              console.error('Failed to remove label "copilot-remove":', error);
-              throw error;
-            });
-            
+
+      - name: Remove copilot-remove label after invalid membership
+        if: steps.validate_membership.outputs.status == 'invalid'
+        uses: ./.github/actions/remove-label
+        with:
+          github-token: ${{ github.token }}
+          label-name: 'copilot-remove'
+          issue-number: ${{ github.event.issue.number }}
+          owner: ${{ github.repository_owner }}
+          repo: ${{ github.event.repository.name }}
+
+      - name: Close issue after invalid membership for removal
+        if: steps.validate_membership.outputs.status == 'invalid'
+        uses: actions/github-script@v7
+        with:
+          script: |
             await github.rest.issues.update({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -454,21 +447,22 @@ jobs:
               issue_number: context.issue.number,
               body: '✅ Successfully removed the GitHub Copilot license.'
             });
-            
-            await github.rest.issues.removeLabel({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              name: 'copilot-remove'
-            }).catch(error => {
-              if (error && error.status === 404) {
-                console.warn('Label "copilot-remove" not found when attempting removal; nothing to remove.');
-                return;
-              }
-              console.error('Failed to remove label "copilot-remove":', error);
-              throw error;
-            });
-            
+
+      - name: Remove copilot-remove label after successful removal
+        if: steps.remove_license.outputs.result == 'success'
+        uses: ./.github/actions/remove-label
+        with:
+          github-token: ${{ github.token }}
+          label-name: 'copilot-remove'
+          issue-number: ${{ github.event.issue.number }}
+          owner: ${{ github.repository_owner }}
+          repo: ${{ github.event.repository.name }}
+
+      - name: Close issue after successful removal
+        if: steps.remove_license.outputs.result == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
             await github.rest.issues.update({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -488,21 +482,22 @@ jobs:
               issue_number: context.issue.number,
               body: 'ℹ️ You do not currently have a GitHub Copilot license assigned. No action was needed.'
             });
-            
-            await github.rest.issues.removeLabel({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              name: 'copilot-remove'
-            }).catch(error => {
-              if (error && error.status === 404) {
-                console.warn('Label "copilot-remove" not found when attempting removal; nothing to remove.');
-                return;
-              }
-              console.error('Failed to remove label "copilot-remove":', error);
-              throw error;
-            });
-            
+
+      - name: Remove copilot-remove label after no license
+        if: steps.remove_license.outputs.result == 'no_license'
+        uses: ./.github/actions/remove-label
+        with:
+          github-token: ${{ github.token }}
+          label-name: 'copilot-remove'
+          issue-number: ${{ github.event.issue.number }}
+          owner: ${{ github.repository_owner }}
+          repo: ${{ github.event.repository.name }}
+
+      - name: Close issue after no license
+        if: steps.remove_license.outputs.result == 'no_license'
+        uses: actions/github-script@v7
+        with:
+          script: |
             await github.rest.issues.update({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -522,20 +517,16 @@ jobs:
               issue_number: context.issue.number,
               body: '🔒 Insufficient permissions to remove Copilot license.\n\nThe GitHub App requires the following permissions:\n- `members: read`\n- `copilot_business: write`\n\nPlease contact the organization administrator to configure the GitHub App correctly.\n\nThis issue will remain open for administrator review.'
             });
-            
-            await github.rest.issues.removeLabel({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              name: 'copilot-remove'
-            }).catch(error => {
-              if (error && error.status === 404) {
-                console.warn('Label "copilot-remove" not found when attempting removal; nothing to remove.');
-                return;
-              }
-              console.error('Failed to remove label "copilot-remove":', error);
-              throw error;
-            });
+
+      - name: Remove copilot-remove label after insufficient permissions
+        if: steps.remove_license.outputs.result == 'insufficient_permissions'
+        uses: ./.github/actions/remove-label
+        with:
+          github-token: ${{ github.token }}
+          label-name: 'copilot-remove'
+          issue-number: ${{ github.event.issue.number }}
+          owner: ${{ github.repository_owner }}
+          repo: ${{ github.event.repository.name }}
 
       - name: Comment GitHub Issue on failure
         if: steps.remove_license.outputs.result == 'failure'
@@ -556,17 +547,13 @@ jobs:
               issue_number: context.issue.number,
               body: `❌ Failed to remove the GitHub Copilot license.\n\n**Error:** ${safeErrorMessage}\n\nPlease contact the organization administrator for assistance.\n\nThis issue will remain open for administrator review.`
             });
-            
-            await github.rest.issues.removeLabel({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              name: 'copilot-remove'
-            }).catch(error => {
-              if (error && error.status === 404) {
-                console.warn('Label "copilot-remove" not found when attempting removal; nothing to remove.');
-                return;
-              }
-              console.error('Failed to remove label "copilot-remove":', error);
-              throw error;
-            });
+
+      - name: Remove copilot-remove label after failure
+        if: steps.remove_license.outputs.result == 'failure'
+        uses: ./.github/actions/remove-label
+        with:
+          github-token: ${{ github.token }}
+          label-name: 'copilot-remove'
+          issue-number: ${{ github.event.issue.number }}
+          owner: ${{ github.repository_owner }}
+          repo: ${{ github.event.repository.name }}
