@@ -20,7 +20,7 @@ runs:
   using: 'composite'
   steps:
     - name: Remove label
-      uses: actions/github-script@v7
+      uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
       env:
         LABEL_NAME_JSON: ${{ toJSON(inputs.label-name) }}
         ISSUE_NUMBER_JSON: ${{ toJSON(inputs.issue-number) }}

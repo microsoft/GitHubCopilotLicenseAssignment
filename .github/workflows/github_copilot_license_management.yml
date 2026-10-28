@@ -26,12 +26,12 @@ jobs:
     steps:
       # Checkout repository to access local composite actions
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       # This step gets a GitHub App installation access token
       - name: Get Token
         id: get_workflow_token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1.12.0
         with:
           app-id: ${{ secrets.APPLICATION_ID }}
           private-key: ${{ secrets.APPLICATION_PRIVATE_KEY }}
@@ -48,7 +48,7 @@ jobs:
       # Comment if user is not an org member
       - name: Comment on invalid membership for license assignment
         if: steps.validate_membership.outputs.status == 'invalid'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           script: |
             await github.rest.issues.createComment({
@@ -70,7 +70,7 @@ jobs:
 
       - name: Close issue after invalid membership
         if: steps.validate_membership.outputs.status == 'invalid'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           script: |
             await github.rest.issues.update({
@@ -84,7 +84,7 @@ jobs:
       # Comment if validation encountered an internal error
       - name: Comment on validation error for license assignment
         if: steps.validate_membership.outputs.status == 'error'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           script: |
             await github.rest.issues.createComment({
@@ -98,7 +98,7 @@ jobs:
       - name: Assign GitHub Copilot license
         if: steps.validate_membership.outputs.status == 'valid'
         id: assign_license
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           github-token: ${{ steps.get_workflow_token.outputs.token }}
           result-encoding: string
@@ -148,7 +148,7 @@ jobs:
       # This step runs if the user ALREADY has a license
       - name: Comment on existing license and close issue
         if: steps.assign_license.outputs.result == 'already_exists'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           script: |
             await github.rest.issues.createComment({
@@ -170,7 +170,7 @@ jobs:
 
       - name: Close issue after existing license
         if: steps.assign_license.outputs.result == 'already_exists'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           script: |
             await github.rest.issues.update({
@@ -183,7 +183,7 @@ jobs:
       # This step runs on successful assignment
       - name: Comment and close GitHub Issue on success
         if: steps.assign_license.outputs.result == 'success'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           script: |
             await github.rest.issues.createComment({
@@ -205,7 +205,7 @@ jobs:
 
       - name: Close issue after successful assignment
         if: steps.assign_license.outputs.result == 'success'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           script: |
             await github.rest.issues.update({
@@ -218,7 +218,7 @@ jobs:
       # Handle seat limit reached
       - name: Comment on seat limit
         if: steps.assign_license.outputs.result == 'seat_limit'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           script: |
             await github.rest.issues.createComment({
@@ -241,7 +241,7 @@ jobs:
       # Handle user not found
       - name: Comment on user not found
         if: steps.assign_license.outputs.result == 'user_not_found'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           script: |
             await github.rest.issues.createComment({
@@ -263,7 +263,7 @@ jobs:
 
       - name: Close issue after user not found
         if: steps.assign_license.outputs.result == 'user_not_found'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           script: |
             await github.rest.issues.update({
@@ -277,7 +277,7 @@ jobs:
       # Handle insufficient permissions
       - name: Comment on insufficient permissions
         if: steps.assign_license.outputs.result == 'insufficient_permissions'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           script: |
             await github.rest.issues.createComment({
@@ -300,7 +300,7 @@ jobs:
       # This step runs on any other failure
       - name: Comment GitHub Issue on failure
         if: steps.assign_license.outputs.result == 'failure'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           script: |
             const rawErrorMessage = '${{ steps.assign_license.outputs.error_message }}';
@@ -329,11 +329,11 @@ jobs:
     steps:
       # Checkout repository to access local composite actions
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Get Token
         id: get_workflow_token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1.12.0
         with:
           app-id: ${{ secrets.APPLICATION_ID }}
           private-key: ${{ secrets.APPLICATION_PRIVATE_KEY }}
@@ -350,7 +350,7 @@ jobs:
       # Comment if user is not an org member
       - name: Comment on invalid membership for license removal
         if: steps.validate_membership.outputs.status == 'invalid'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           script: |
             await github.rest.issues.createComment({
@@ -372,7 +372,7 @@ jobs:
 
       - name: Close issue after invalid membership for removal
         if: steps.validate_membership.outputs.status == 'invalid'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           script: |
             await github.rest.issues.update({
@@ -386,7 +386,7 @@ jobs:
       # Comment if validation encountered an internal error
       - name: Comment on validation error for license removal
         if: steps.validate_membership.outputs.status == 'error'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           script: |
             await github.rest.issues.createComment({
@@ -399,7 +399,7 @@ jobs:
       - name: Remove GitHub Copilot license
         if: steps.validate_membership.outputs.status == 'valid'
         id: remove_license
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           github-token: ${{ steps.get_workflow_token.outputs.token }}
           result-encoding: string
@@ -438,7 +438,7 @@ jobs:
 
       - name: Comment and close GitHub Issue on success
         if: steps.remove_license.outputs.result == 'success'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           script: |
             await github.rest.issues.createComment({
@@ -460,7 +460,7 @@ jobs:
 
       - name: Close issue after successful removal
         if: steps.remove_license.outputs.result == 'success'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           script: |
             await github.rest.issues.update({
@@ -473,7 +473,7 @@ jobs:
       # Handle user with no license
       - name: Comment on no license
         if: steps.remove_license.outputs.result == 'no_license'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           script: |
             await github.rest.issues.createComment({
@@ -495,7 +495,7 @@ jobs:
 
       - name: Close issue after no license
         if: steps.remove_license.outputs.result == 'no_license'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           script: |
             await github.rest.issues.update({
@@ -508,7 +508,7 @@ jobs:
       # Handle insufficient permissions
       - name: Comment on insufficient permissions for removal
         if: steps.remove_license.outputs.result == 'insufficient_permissions'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           script: |
             await github.rest.issues.createComment({
@@ -530,7 +530,7 @@ jobs:
 
       - name: Comment GitHub Issue on failure
         if: steps.remove_license.outputs.result == 'failure'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           script: |
             function escapeMarkdown(text) {
